@@ -1,79 +1,122 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Particle Animation</title>
-    <style>
-        body { margin: 0; overflow: hidden; }
-        canvas { display: block; }
-    </style>
+<meta charset="UTF-8">
+<title>3D Flower Particles</title>
+
+<style>
+body{
+    margin:0;
+    overflow:hidden;
+    background:black;
+}
+
+#title{
+    position:absolute;
+    top:20px;
+    width:100%;
+    text-align:center;
+    color:white;
+    font-family:sans-serif;
+    font-size:28px;
+    letter-spacing:2px;
+}
+</style>
 </head>
+
 <body>
-    <canvas id="canvas"></canvas>
-    <script>
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
 
-        let particles = [];
-        const numParticles = 1000;
+<div id="title">🌸 Particle Flower</div>
 
-        class Particle {
-            constructor(x, y) {
-                this.x = x;
-                this.y = y;
-                this.size = Math.random() * 5 + 1;
-                this.speedX = (Math.random() - 0.5) * 3;
-                this.speedY = (Math.random() - 0.5) * 3;
-                this.color = 'rgba(255, 255, 255, 0.8)';
-            }
-            update() {
-                this.x += this.speedX;
-                this.y += this.speedY;
-                if (this.size > 0.2) this.size -= 0.1;
-            }
-            draw() {
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.closePath();
-                ctx.fill();
-            }
-        }
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 
-        for (let i = 0; i < numParticles; i++) {
-            particles.push(new Particle(Math.random() * canvas.width, Math.random() * canvas.height));
-        }
+<script>
 
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            particles.forEach((particle, index) => {
-                particle.update();
-                particle.draw();
-                if (particle.size <= 0) {
-                    particles.splice(index, 1);
-                    particles.push(new Particle(Math.random() * canvas.width, Math.random() * canvas.height));
-                }
-            });
-            requestAnimationFrame(animate);
-        }
+const scene = new THREE.Scene()
 
-        function formFlower() {
-            setInterval(() => {
-                particles.forEach((particle, index) => {
-                    const angle = (index / particles.length) * Math.PI * 2;
-                    const radius = Math.random() * 100 + 50;
-                    particle.x = canvas.width / 2 + Math.cos(angle) * radius;
-                    particle.y = canvas.height / 2 + Math.sin(angle) * radius;
-                    particle.size = 5;
-                });
-            }, 2000);
-        }
+const camera = new THREE.PerspectiveCamera(
+75,
+window.innerWidth/window.innerHeight,
+0.1,
+1000
+)
 
-        animate();
-        formFlower();
-    </script>
+camera.position.z = 8
+
+const renderer = new THREE.WebGLRenderer({antialias:true})
+renderer.setSize(window.innerWidth,window.innerHeight)
+document.body.appendChild(renderer.domElement)
+
+const particleCount = 5000
+
+const positions = new Float32Array(particleCount*3)
+const targets = new Float32Array(particleCount*3)
+
+for(let i=0;i<particleCount;i++){
+
+    const i3=i*3
+
+    positions[i3]=(Math.random()-0.5)*20
+    positions[i3+1]=(Math.random()-0.5)*20
+    positions[i3+2]=(Math.random()-0.5)*20
+
+    const t=i/particleCount*Math.PI*10
+
+    const r=1.5+Math.sin(5*t)*0.8
+
+    targets[i3]=r*Math.cos(t)
+    targets[i3+1]=r*Math.sin(t)
+    targets[i3+2]=Math.sin(t*2)*0.5
+}
+
+const geometry=new THREE.BufferGeometry()
+geometry.setAttribute(
+'position',
+new THREE.BufferAttribute(positions,3)
+)
+
+const material=new THREE.PointsMaterial({
+color:0xff66ff,
+size:0.05
+})
+
+const points=new THREE.Points(geometry,material)
+scene.add(points)
+
+function animate(){
+
+requestAnimationFrame(animate)
+
+const pos=geometry.attributes.position.array
+
+for(let i=0;i<particleCount;i++){
+
+    const i3=i*3
+
+    pos[i3]+= (targets[i3]-pos[i3])*0.02
+    pos[i3+1]+= (targets[i3+1]-pos[i3+1])*0.02
+    pos[i3+2]+= (targets[i3+2]-pos[i3+2])*0.02
+}
+
+geometry.attributes.position.needsUpdate=true
+
+points.rotation.y+=0.003
+
+renderer.render(scene,camera)
+
+}
+
+animate()
+
+window.addEventListener("resize",()=>{
+
+camera.aspect=window.innerWidth/window.innerHeight
+camera.updateProjectionMatrix()
+renderer.setSize(window.innerWidth,window.innerHeight)
+
+})
+
+</script>
+
 </body>
 </html>
